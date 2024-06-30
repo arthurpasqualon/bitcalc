@@ -1,3 +1,4 @@
+import 'package:bitcalc/repositories/ticker_price_repository.dart';
 import 'package:bitcalc/widgets/text_field_calculator.dart';
 import 'package:flutter/material.dart';
 
@@ -17,20 +18,25 @@ class _CalculatorPageState extends State<CalculatorPage> {
   bool isLoading = false;
   TextEditingController amountFiatController = TextEditingController();
   TextEditingController amountSatoshisController = TextEditingController();
+  late TickerPriceRepository tickerPriceRepository;
 
   @override
   void initState() {
     super.initState();
+    tickerPriceRepository = TickerPriceRepository();
     getTickerPrice();
   }
 
-  void getTickerPrice() {
-    amountFiatController.text = '1.0';
-    amountSatoshisController.text = '346627.00000000';
-    setState(() {
-      selectedPrice = 346627.00000000;
-      isLoading = false;
-    });
+  void getTickerPrice() async {
+    var result = await tickerPriceRepository.fetchPrice("BTC$dropdownValue");
+    if (result.price != null) {
+      amountFiatController.text = "1.0";
+      amountSatoshisController.text = result.price ?? "0.0";
+      setState(() {
+        selectedPrice = double.tryParse(result.price ?? "0.0") ?? 0.0;
+        isLoading = false;
+      });
+    }
   }
 
   void onChangeCurrency(String currency) {
@@ -55,14 +61,6 @@ class _CalculatorPageState extends State<CalculatorPage> {
       double amountFiat = amountBitcoin * selectedPrice;
 
       amountFiatController.text = amountFiat.toString();
-    }
-
-    void onPressConfirm() {
-      if (amountFiatController.text != "1") {
-        calculateBitcoinAmount();
-      } else if (amountSatoshisController.text != "346627.00000000") {
-        calculateFiatAmount();
-      }
     }
 
     return Scaffold(
@@ -137,14 +135,12 @@ class _CalculatorPageState extends State<CalculatorPage> {
                           ),
                         ),
                         onChanged: (value) {
-                          setState(() {
-                            dropdownValue = value.toString();
-                          });
+                          onChangeCurrency(value.toString());
                         }),
                     const SizedBox(height: 20),
                     ElevatedButton(
                       onPressed: () {
-                        onPressConfirm();
+                        getTickerPrice();
                       },
                       child: const Text('Refresh and Calculate'),
                     ),
