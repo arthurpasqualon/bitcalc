@@ -19,6 +19,9 @@ class TextFieldCalculator extends StatelessWidget {
       keyboardType: const TextInputType.numberWithOptions(
         decimal: true,
       ),
+      style: const TextStyle(
+        color: Colors.white,
+      ),
       decoration: InputDecoration(
         enabledBorder: const OutlineInputBorder(
           borderSide: BorderSide(

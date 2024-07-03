@@ -17,7 +17,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
   List<String> currencies = ["USDT", "EUR", "GBP", "BRL"];
   bool isLoading = false;
   TextEditingController amountFiatController = TextEditingController();
-  TextEditingController amountSatoshisController = TextEditingController();
+  TextEditingController amountBitcoinController = TextEditingController();
   late TickerPriceRepository tickerPriceRepository;
 
   @override
@@ -27,15 +27,29 @@ class _CalculatorPageState extends State<CalculatorPage> {
     getTickerPrice();
   }
 
+  void calculateBitcoinAmount() {
+    double amountFiat = double.tryParse(amountFiatController.text) ?? 0;
+    double amountBitcoin = amountFiat / selectedPrice;
+
+    amountBitcoinController.text = amountBitcoin.toStringAsFixed(8);
+  }
+
+  void calculateFiatAmount() {
+    double amountBitcoin = double.tryParse(amountBitcoinController.text) ?? 0;
+    double amountFiat = amountBitcoin * selectedPrice;
+
+    amountFiatController.text = amountFiat.toStringAsFixed(2);
+  }
+
   void getTickerPrice() async {
     var result = await tickerPriceRepository.fetchPrice("BTC$dropdownValue");
     if (result.price != null) {
       amountFiatController.text = "1.0";
-      amountSatoshisController.text = result.price ?? "0.0";
       setState(() {
         selectedPrice = double.tryParse(result.price ?? "0.0") ?? 0.0;
         isLoading = false;
       });
+      calculateBitcoinAmount();
     }
   }
 
@@ -48,21 +62,6 @@ class _CalculatorPageState extends State<CalculatorPage> {
 
   @override
   Widget build(BuildContext context) {
-    void calculateBitcoinAmount() {
-      double amountFiat = double.tryParse(amountFiatController.text) ?? 0;
-      double amountBitcoin = amountFiat / selectedPrice;
-
-      amountSatoshisController.text = amountBitcoin.toString();
-    }
-
-    void calculateFiatAmount() {
-      double amountBitcoin =
-          double.tryParse(amountSatoshisController.text) ?? 0;
-      double amountFiat = amountBitcoin * selectedPrice;
-
-      amountFiatController.text = amountFiat.toString();
-    }
-
     return Scaffold(
       backgroundColor: const Color.fromARGB(234, 92, 12, 230),
       body: SingleChildScrollView(
@@ -107,7 +106,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                         onChanged: (value) {
                           calculateFiatAmount();
                         },
-                        textController: amountSatoshisController),
+                        textController: amountBitcoinController),
                     const SizedBox(height: 20),
                     DropdownButtonFormField(
                         value: dropdownValue,
