@@ -15,6 +15,8 @@ class _CalculatorPageState extends State<CalculatorPage> {
   double selectedPrice = 0.0;
   String dropdownValue = 'USDT';
   List<String> currencies = ["USDT", "EUR", "GBP", "BRL"];
+  String amountBitcoinValue = "BTC";
+  List<String> bitcoinValues = ["BTC", "SATS"];
   bool isLoading = false;
   TextEditingController amountFiatController = TextEditingController();
   TextEditingController amountBitcoinController = TextEditingController();
@@ -29,14 +31,25 @@ class _CalculatorPageState extends State<CalculatorPage> {
 
   void calculateBitcoinAmount() {
     double amountFiat = double.tryParse(amountFiatController.text) ?? 0;
-    double amountBitcoin = amountFiat / selectedPrice;
-
-    amountBitcoinController.text = amountBitcoin.toStringAsFixed(8);
+    double amountBitcoin;
+    if (amountBitcoinValue == "SATS") {
+      amountBitcoin = (amountFiat / selectedPrice) * 100000000;
+      amountBitcoinController.text = amountBitcoin.toStringAsFixed(0);
+    } else {
+      amountBitcoin = amountFiat / selectedPrice;
+      amountBitcoinController.text = amountBitcoin.toStringAsFixed(8);
+    }
   }
 
   void calculateFiatAmount() {
     double amountBitcoin = double.tryParse(amountBitcoinController.text) ?? 0;
-    double amountFiat = amountBitcoin * selectedPrice;
+    double amountFiat;
+
+    if (amountBitcoinValue == "SATS") {
+      amountFiat = (amountBitcoin * 100000000) * selectedPrice;
+    } else {
+      amountFiat = amountBitcoin * selectedPrice;
+    }
 
     amountFiatController.text = amountFiat.toStringAsFixed(2);
   }
@@ -44,7 +57,9 @@ class _CalculatorPageState extends State<CalculatorPage> {
   void getTickerPrice() async {
     var result = await tickerPriceRepository.fetchPrice("BTC$dropdownValue");
     if (result.price != null) {
-      amountFiatController.text = "1.0";
+      if (amountFiatController.text.isEmpty) {
+        amountFiatController.text = "1.0";
+      }
       setState(() {
         selectedPrice = double.tryParse(result.price ?? "0.0") ?? 0.0;
         isLoading = false;
@@ -89,61 +104,115 @@ class _CalculatorPageState extends State<CalculatorPage> {
                   ],
                 ),
               ),
+              const SizedBox(height: 20),
               Padding(
                 padding: const EdgeInsets.all(16.0),
-                child: Column(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const SizedBox(height: 20),
-                    TextFieldCalculator(
-                        textLabel: "Fiat Amount",
-                        onChanged: (value) {
-                          calculateBitcoinAmount();
-                        },
-                        textController: amountFiatController),
-                    const SizedBox(height: 20),
-                    TextFieldCalculator(
-                        textLabel: "Bitcoin Satoshis",
-                        onChanged: (value) {
-                          calculateFiatAmount();
-                        },
-                        textController: amountBitcoinController),
-                    const SizedBox(height: 20),
-                    DropdownButtonFormField(
-                        value: dropdownValue,
-                        isExpanded: true,
-                        style: const TextStyle(color: Colors.white),
-                        dropdownColor: Colors.yellow[800],
-                        items: currencies
-                            .map((e) => DropdownMenuItem(
-                                  value: e,
-                                  child: Text(
-                                    e.toString(),
-                                  ),
-                                ))
-                            .toList(),
-                        decoration: const InputDecoration(
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(
-                              color: Colors.white,
+                    Expanded(
+                      flex: 2,
+                      child: TextFieldCalculator(
+                          textLabel: amountBitcoinValue,
+                          onChanged: (value) {
+                            calculateFiatAmount();
+                          },
+                          textController: amountBitcoinController),
+                    ),
+                    const SizedBox(width: 18),
+                    Expanded(
+                      flex: 1,
+                      child: DropdownButtonFormField(
+                          value: amountBitcoinValue,
+                          isExpanded: true,
+                          style: const TextStyle(color: Colors.white),
+                          dropdownColor: Colors.yellow[800],
+                          items: bitcoinValues
+                              .map((e) => DropdownMenuItem(
+                                    value: e,
+                                    child: Text(
+                                      e.toString(),
+                                    ),
+                                  ))
+                              .toList(),
+                          decoration: const InputDecoration(
+                            enabledBorder: OutlineInputBorder(
+                              borderSide: BorderSide(
+                                color: Colors.white,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderSide: BorderSide(
+                                color: Colors.white,
+                              ),
                             ),
                           ),
-                          focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                        onChanged: (value) {
-                          onChangeCurrency(value.toString());
-                        }),
-                    const SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: () {
-                        getTickerPrice();
-                      },
-                      child: const Text('Refresh and Calculate'),
+                          onChanged: (value) {
+                            setState(() {
+                              amountBitcoinValue = value.toString();
+                            });
+                            calculateBitcoinAmount();
+                          }),
                     ),
                   ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: TextFieldCalculator(
+                          textLabel: "Fiat Amount",
+                          onChanged: (value) {
+                            calculateBitcoinAmount();
+                          },
+                          textController: amountFiatController),
+                    ),
+                    const SizedBox(width: 18),
+                    Expanded(
+                      flex: 1,
+                      child: DropdownButtonFormField(
+                          value: dropdownValue,
+                          isExpanded: true,
+                          style: const TextStyle(color: Colors.white),
+                          dropdownColor: Colors.yellow[800],
+                          items: currencies
+                              .map((e) => DropdownMenuItem(
+                                    value: e,
+                                    child: Text(
+                                      e.toString(),
+                                    ),
+                                  ))
+                              .toList(),
+                          decoration: const InputDecoration(
+                            enabledBorder: OutlineInputBorder(
+                              borderSide: BorderSide(
+                                color: Colors.white,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderSide: BorderSide(
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                          onChanged: (value) {
+                            onChangeCurrency(value.toString());
+                          }),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: ElevatedButton(
+                  onPressed: () {
+                    getTickerPrice();
+                  },
+                  child: const Text('Refresh and Calculate'),
                 ),
               ),
             ],
