@@ -46,7 +46,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
     double amountFiat;
 
     if (amountBitcoinValue == "SATS") {
-      amountFiat = (amountBitcoin * 100000000) * selectedPrice;
+      amountFiat = (amountBitcoin / 100000000) * selectedPrice;
     } else {
       amountFiat = amountBitcoin * selectedPrice;
     }
@@ -55,6 +55,9 @@ class _CalculatorPageState extends State<CalculatorPage> {
   }
 
   void getTickerPrice() async {
+    setState(() {
+      isLoading = true;
+    });
     var result = await tickerPriceRepository.fetchPrice("BTC$dropdownValue");
     if (result.price != null) {
       if (amountFiatController.text.isEmpty) {
@@ -101,6 +104,14 @@ class _CalculatorPageState extends State<CalculatorPage> {
                         color: Colors.white,
                       ),
                     ),
+                    Text(
+                      "Don't trust, verify.",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                      ),
+                    )
                   ],
                 ),
               ),
@@ -151,7 +162,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                             setState(() {
                               amountBitcoinValue = value.toString();
                             });
-                            calculateBitcoinAmount();
+                            getTickerPrice();
                           }),
                     ),
                   ],
@@ -208,11 +219,44 @@ class _CalculatorPageState extends State<CalculatorPage> {
               ),
               Padding(
                 padding: const EdgeInsets.all(16.0),
-                child: ElevatedButton(
-                  onPressed: () {
-                    getTickerPrice();
-                  },
-                  child: const Text('Refresh and Calculate'),
+                child: Column(
+                  children: [
+                    ElevatedButton(
+                      onPressed: () {
+                        getTickerPrice();
+                      },
+                      child: const Text('Refresh and Calculate'),
+                    ),
+                    const SizedBox(height: 18),
+                    SizedBox(
+                      height: 48,
+                      child: isLoading
+                          ? const Center(
+                              child: SizedBox(
+                                  height: 18,
+                                  width: 18,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 1,
+                                  )),
+                            )
+                          : Text(
+                              "1 BTC = $selectedPrice $dropdownValue",
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                              ),
+                            ),
+                    ),
+                    const Text(
+                      "We are not responsible for any loss or damage.",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
